@@ -1,4 +1,4 @@
-#pragma once
+pragma once
 #ifndef ADDITIONALLY_H
 #define ADDITIONALLY_H
 
@@ -47,85 +47,107 @@
 extern "C" {
 #endif
 
-    extern int gpu_index;
+extern int gpu_index;
 
-    // -------------- im2col.h --------------
+// -------------- im2col.h --------------
 
-    // im2col.c
-    float im2col_get_pixel(float *im, int height, int width, int channels,
-        int row, int col, int channel, int pad);
+// im2col.c
+float im2col_get_pixel(float *im, int height, int width, int channels,
+                       int row, int col, int channel, int pad);
 
-    // im2col.c
-    //From Berkeley Vision's Caffe!
-    //https://github.com/BVLC/caffe/blob/master/LICENSE
-    void im2col_cpu(float* data_im,
-        int channels, int height, int width,
-        int ksize, int stride, int pad, float* data_col);
+// im2col.c
+//From Berkeley Vision's Caffe!
+//https://github.com/BVLC/caffe/blob/master/LICENSE
+void im2col_cpu(float *data_im,
+                int channels, int height, int width,
+                int ksize, int stride, int pad, float *data_col);
 
 
-    // --------------  activations.h --------------
+// --------------  activations.h --------------
 
-    typedef enum {
-        LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU
-    }ACTIVATION;
+typedef enum
+{
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU
+} ACTIVATION;
 
-    static inline float stair_activate(float x)
+static inline float stair_activate(float x)
+{
+    int n = floor(x);
+    if (n % 2 == 0) return floor(x / 2.);
+    else return (x - n) + floor(x / 2.);
+}
+
+static inline float hardtan_activate(float x)
+{
+    if (x < -1) return -1;
+    if (x > 1) return 1;
+    return x;
+}
+
+static inline float linear_activate(float x)
+{ return x; }
+
+static inline float logistic_activate(float x)
+{ return 1. / (1. + exp(-x)); }
+
+static inline float loggy_activate(float x)
+{ return 2. / (1. + exp(-x)) - 1; }
+
+static inline float relu_activate(float x)
+{ return x * (x > 0); }
+
+static inline float elu_activate(float x)
+{ return (x >= 0) * x + (x < 0) * (exp(x) - 1); }
+
+static inline float relie_activate(float x)
+{ return (x > 0) ? x : .01 * x; }
+
+static inline float ramp_activate(float x)
+{ return x * (x > 0) + .1 * x; }
+
+static inline float leaky_activate(float x)
+{ return (x > 0) ? x : .1 * x; }
+
+static inline float tanh_activate(float x)
+{ return (exp(2 * x) - 1) / (exp(2 * x) + 1); }
+
+static inline float plse_activate(float x)
+{
+    if (x < -4) return .01 * (x + 4);
+    if (x > 4) return .01 * (x - 4) + 1;
+    return .125 * x + .5;
+}
+
+static inline float lhtan_activate(float x)
+{
+    if (x < 0) return .001 * x;
+    if (x > 1) return .001 * (x - 1) + 1;
+    return x;
+}
+
+static inline ACTIVATION get_activation(char *s)
+{
+    if (strcmp(s, "logistic") == 0) return LOGISTIC;
+    if (strcmp(s, "loggy") == 0) return LOGGY;
+    if (strcmp(s, "relu") == 0) return RELU;
+    if (strcmp(s, "elu") == 0) return ELU;
+    if (strcmp(s, "relie") == 0) return RELIE;
+    if (strcmp(s, "plse") == 0) return PLSE;
+    if (strcmp(s, "hardtan") == 0) return HARDTAN;
+    if (strcmp(s, "lhtan") == 0) return LHTAN;
+    if (strcmp(s, "linear") == 0) return LINEAR;
+    if (strcmp(s, "ramp") == 0) return RAMP;
+    if (strcmp(s, "leaky") == 0) return LEAKY;
+    if (strcmp(s, "tanh") == 0) return TANH;
+    if (strcmp(s, "stair") == 0) return STAIR;
+    fprintf(stderr, "Couldn't find activation function %s, going with ReLU\n", s);
+    return RELU;
+}
+
+static float activate(float x, ACTIVATION a)
+{
+    switch (a)
     {
-        int n = floor(x);
-        if (n % 2 == 0) return floor(x / 2.);
-        else return (x - n) + floor(x / 2.);
-    }
-    static inline float hardtan_activate(float x)
-    {
-        if (x < -1) return -1;
-        if (x > 1) return 1;
-        return x;
-    }
-    static inline float linear_activate(float x) { return x; }
-    static inline float logistic_activate(float x) { return 1. / (1. + exp(-x)); }
-    static inline float loggy_activate(float x) { return 2. / (1. + exp(-x)) - 1; }
-    static inline float relu_activate(float x) { return x*(x>0); }
-    static inline float elu_activate(float x) { return (x >= 0)*x + (x < 0)*(exp(x) - 1); }
-    static inline float relie_activate(float x) { return (x>0) ? x : .01*x; }
-    static inline float ramp_activate(float x) { return x*(x>0) + .1*x; }
-    static inline float leaky_activate(float x) { return (x>0) ? x : .1*x; }
-    static inline float tanh_activate(float x) { return (exp(2 * x) - 1) / (exp(2 * x) + 1); }
-    static inline float plse_activate(float x)
-    {
-        if (x < -4) return .01 * (x + 4);
-        if (x > 4)  return .01 * (x - 4) + 1;
-        return .125*x + .5;
-    }
-
-    static inline float lhtan_activate(float x)
-    {
-        if (x < 0) return .001*x;
-        if (x > 1) return .001*(x - 1) + 1;
-        return x;
-    }
-
-    static inline ACTIVATION get_activation(char *s)
-    {
-        if (strcmp(s, "logistic") == 0) return LOGISTIC;
-        if (strcmp(s, "loggy") == 0) return LOGGY;
-        if (strcmp(s, "relu") == 0) return RELU;
-        if (strcmp(s, "elu") == 0) return ELU;
-        if (strcmp(s, "relie") == 0) return RELIE;
-        if (strcmp(s, "plse") == 0) return PLSE;
-        if (strcmp(s, "hardtan") == 0) return HARDTAN;
-        if (strcmp(s, "lhtan") == 0) return LHTAN;
-        if (strcmp(s, "linear") == 0) return LINEAR;
-        if (strcmp(s, "ramp") == 0) return RAMP;
-        if (strcmp(s, "leaky") == 0) return LEAKY;
-        if (strcmp(s, "tanh") == 0) return TANH;
-        if (strcmp(s, "stair") == 0) return STAIR;
-        fprintf(stderr, "Couldn't find activation function %s, going with ReLU\n", s);
-        return RELU;
-    }
-
-    static float activate(float x, ACTIVATION a)
-    {
-        switch (a) {
         case LINEAR:
             return linear_activate(x);
         case LOGISTIC:
@@ -152,824 +174,847 @@ extern "C" {
             return hardtan_activate(x);
         case LHTAN:
             return lhtan_activate(x);
-        }
-        return 0;
     }
+    return 0;
+}
 
-    static void activate_array(float *x, const int n, const ACTIVATION a)
+static void activate_array(float *x, const int n, const ACTIVATION a)
+{
+    int i;
+    for (i = 0; i < n; ++i)
     {
-        int i;
-        for (i = 0; i < n; ++i) {
-            x[i] = activate(x[i], a);
-        }
+        x[i] = activate(x[i], a);
     }
+}
 
 
-    // -------------- XNOR-net ------------
+// -------------- XNOR-net ------------
 
-    // binarize Weights
-    void binarize_weights(float *weights, int n, int size, float *binary);
+// binarize Weights
+void binarize_weights(float *weights, int n, int size, float *binary);
 
-    // binarize Input
-    void binarize_cpu(float *input, int n, float *binary);
+// binarize Input
+void binarize_cpu(float *input, int n, float *binary);
 
-    struct layer;
-    typedef struct layer layer;
-    typedef layer convolutional_layer;
-    struct network;
+struct layer;
+typedef struct layer layer;
+typedef layer convolutional_layer;
+struct network;
 
-    // float32 to bit-1 and align weights for 1 layer
-    void binary_align_weights(convolutional_layer *l);
+// float32 to bit-1 and align weights for 1 layer
+void binary_align_weights(convolutional_layer *l);
 
-    // float32 to bit-1 and align weights for ALL layers
-    void calculate_binary_weights(struct network net);
+// float32 to bit-1 and align weights for ALL layers
+void calculate_binary_weights(struct network net);
 
-    // -------------- XNOR-net GPU ------------
+// -------------- XNOR-net GPU ------------
 
-    // in gpu.h
+// in gpu.h
 
-    // -------------- blas.h --------------
+// -------------- blas.h --------------
 
-    // blas.c
-    void gemm_nn(int M, int N, int K, float ALPHA,
-        float *A, int lda, float *B, int ldb, float *C, int ldc);
+// blas.c
+void gemm_nn(int M, int N, int K, float ALPHA,
+             float *A, int lda, float *B, int ldb, float *C, int ldc);
 
-    // blas.c
-    void fill_cpu(int N, float ALPHA, float *X, int INCX);
+// blas.c
+void fill_cpu(int N, float ALPHA, float *X, int INCX);
 
-    void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
-        const int lda, const int ldb, const int block_size);
+void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
+                   const int lda, const int ldb, const int block_size);
 
-    // 32 channels -> 1 channel (with 32 floats)
-    // 256 channels -> 8 channels (with 32 floats)
-    void repack_input(float *input, float *re_packed_input, int w, int h, int c);
+// 32 channels -> 1 channel (with 32 floats)
+// 256 channels -> 8 channels (with 32 floats)
+void repack_input(float *input, float *re_packed_input, int w, int h, int c);
 
-    // transpose uint32_t matrix
-    void transpose_uint32(uint32_t *src, uint32_t *dst, int src_h, int src_w, int src_align, int dst_align);
+// transpose uint32_t matrix
+void transpose_uint32(uint32_t *src, uint32_t *dst, int src_h, int src_w, int src_align, int dst_align);
 
-    // convolution repacked bit matrix (32 channels -> 1 uint32_t) XNOR-net
-    void convolution_repacked(uint32_t *packed_input, uint32_t *packed_weights, float *output,
-        int w, int h, int c, int n, int size, int pad, int new_lda, float *mean_arr);
+// convolution repacked bit matrix (32 channels -> 1 uint32_t) XNOR-net
+void convolution_repacked(uint32_t *packed_input, uint32_t *packed_weights, float *output,
+                          int w, int h, int c, int n, int size, int pad, int new_lda, float *mean_arr);
 
-    // AVX2
-    void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
-        uint32_t *A, int lda,
-        uint32_t *B, int ldb,
-        float *C, int ldc, float *mean_arr);
+// AVX2
+void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
+                              uint32_t *A, int lda,
+                              uint32_t *B, int ldb,
+                              float *C, int ldc, float *mean_arr);
 
-    // AVX2
-    void gemm_nn_bin_transposed_32bit_packed(int M, int N, int K, float ALPHA,
-        uint32_t *A, int lda,
-        uint32_t *B, int ldb,
-        float *C, int ldc, float *mean_arr);
+// AVX2
+void gemm_nn_bin_transposed_32bit_packed(int M, int N, int K, float ALPHA,
+                                         uint32_t *A, int lda,
+                                         uint32_t *B, int ldb,
+                                         float *C, int ldc, float *mean_arr);
 
-    // AVX2
-    void im2col_cpu_custom(float* data_im,
-        int channels, int height, int width,
-        int ksize, int stride, int pad, float* data_col);
+// AVX2
+void im2col_cpu_custom(float *data_im,
+                       int channels, int height, int width,
+                       int ksize, int stride, int pad, float *data_col);
 
-    // AVX2
-    void im2col_cpu_custom_bin(float* data_im,
-        int channels, int height, int width,
-        int ksize, int stride, int pad, float* data_col, int bit_align);
+// AVX2
+void im2col_cpu_custom_bin(float *data_im,
+                           int channels, int height, int width,
+                           int ksize, int stride, int pad, float *data_col, int bit_align);
 
-    // AVX2
-    void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a);
+// AVX2
+void activate_array_cpu_custom(float *x, const int n, const ACTIVATION a);
 
-    // AVX2
-    void forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, int w, int h, int out_w, int out_h, int c,
-        int pad, int stride, int batch);
+// AVX2
+void
+forward_maxpool_layer_avx(float *src, float *dst, int *indexes, int size, int w, int h, int out_w, int out_h, int c,
+                          int pad, int stride, int batch);
 
-    // AVX2
-    void float_to_bit(float *src, unsigned char *dst, size_t size);
+// AVX2
+void float_to_bit(float *src, unsigned char *dst, size_t size);
 
-    // AVX2
-    void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
-        unsigned char *A, int lda,
-        unsigned char *B, int ldb,
-        float *C, int ldc, float *mean_arr);
+// AVX2
+void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
+                                        unsigned char *A, int lda,
+                                        unsigned char *B, int ldb,
+                                        float *C, int ldc, float *mean_arr);
 
-    // -------------- list.h --------------
-
-
-    typedef struct node {
-        void *val;
-        struct node *next;
-        struct node *prev;
-    } node;
-
-    typedef struct list {
-        int size;
-        node *front;
-        node *back;
-    } list;
+// -------------- list.h --------------
 
 
-    // list.c
-    list *get_paths(char *filename);
+typedef struct node
+{
+    void *val;
+    struct node *next;
+    struct node *prev;
+} node;
 
-    // list.c
-    void **list_to_array(list *l);
-
-    // list.c
-    void free_node(node *n);
-
-    // list.c
-    void free_list(list *l);
-
-    // list.c
-    char **get_labels(char *filename);
+typedef struct list
+{
+    int size;
+    node *front;
+    node *back;
+} list;
 
 
-    // -------------- utils.h --------------
+// list.c
+list *get_paths(char *filename);
+
+// list.c
+void **list_to_array(list *l);
+
+// list.c
+void free_node(node *n);
+
+// list.c
+void free_list(list *l);
+
+// list.c
+char **get_labels(char *filename);
+
+
+// -------------- utils.h --------------
 
 #define TWO_PI 6.2831853071795864769252866
 
-    // utils.c
-    void error(const char *s);
+// utils.c
+void error(const char *s);
 
-    // utils.c
-    void malloc_error();
+// utils.c
+void malloc_error();
 
-    // utils.c
-    void file_error(char *s);
+// utils.c
+void file_error(char *s);
 
-    // utils.c
-    char *fgetl(FILE *fp);
+// utils.c
+char *fgetl(FILE *fp);
 
-    // utils.c
-    int *read_map(char *filename);
+// utils.c
+int *read_map(char *filename);
 
-    // utils.c
-    void del_arg(int argc, char **argv, int index);
+// utils.c
+void del_arg(int argc, char **argv, int index);
 
-    // utils.c
-    int find_arg(int argc, char* argv[], char *arg);
+// utils.c
+int find_arg(int argc, char *argv[], char *arg);
 
-    // utils.c
-    int find_int_arg(int argc, char **argv, char *arg, int def);
+// utils.c
+int find_int_arg(int argc, char **argv, char *arg, int def);
 
-    // utils.c
-    float find_float_arg(int argc, char **argv, char *arg, float def);
+// utils.c
+float find_float_arg(int argc, char **argv, char *arg, float def);
 
-    // utils.c
-    char *find_char_arg(int argc, char **argv, char *arg, char *def);
+// utils.c
+char *find_char_arg(int argc, char **argv, char *arg, char *def);
 
-    // utils.c
-    void strip(char *s);
+// utils.c
+void strip(char *s);
 
-    // utils.c
-    void list_insert(list *l, void *val);
+// utils.c
+void list_insert(list *l, void *val);
 
-    // utils.c
-    float rand_uniform(float min, float max);
+// utils.c
+float rand_uniform(float min, float max);
 
-    // utils.c
-    float rand_scale(float s);
+// utils.c
+float rand_scale(float s);
 
-    // utils.c
-    int rand_int(int min, int max);
+// utils.c
+int rand_int(int min, int max);
 
-    // utils.c
-    int constrain_int(int a, int min, int max);
+// utils.c
+int constrain_int(int a, int min, int max);
 
-    // utils.c
-    float dist_array(float *a, float *b, int n, int sub);
+// utils.c
+float dist_array(float *a, float *b, int n, int sub);
 
-    // utils.c
-    float mag_array(float *a, int n);
+// utils.c
+float mag_array(float *a, int n);
 
-    // utils.c
-    int max_index(float *a, int n);
+// utils.c
+int max_index(float *a, int n);
 
-    // utils.c
-    // From http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-    float rand_normal();
+// utils.c
+// From http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+float rand_normal();
 
-    // utils.c
-    void free_ptrs(void **ptrs, int n);
+// utils.c
+void free_ptrs(void **ptrs, int n);
 
-    // --------------  tree.h --------------
+// --------------  tree.h --------------
 
-    typedef struct {
-        int *leaf;
-        int n;
-        int *parent;
-        int *group;
-        char **name;
+typedef struct
+{
+    int *leaf;
+    int n;
+    int *parent;
+    int *group;
+    char **name;
 
-        int groups;
-        int *group_size;
-        int *group_offset;
-    } tree;
+    int groups;
+    int *group_size;
+    int *group_offset;
+} tree;
 
-    // tree.c
-    void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leaves);
+// tree.c
+void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leaves);
 
-    // -------------- layer.h --------------
+// -------------- layer.h --------------
 
-    struct network_state;
+struct network_state;
 
-    struct layer;
-    typedef struct layer layer;
+struct layer;
+typedef struct layer layer;
 
-    typedef enum {
-        CONVOLUTIONAL,
-        DECONVOLUTIONAL,
-        CONNECTED,
-        MAXPOOL,
-        SOFTMAX,
-        DETECTION,
-        DROPOUT,
-        CROP,
-        ROUTE,
-        COST,
-        NORMALIZATION,
-        AVGPOOL,
-        LOCAL,
-        SHORTCUT,
-        ACTIVE,
-        RNN,
-        GRU,
-        CRNN,
-        BATCHNORM,
-        NETWORK,
-        XNOR,
-        REGION,
-        YOLO,
-        UPSAMPLE,
-        REORG,
-        BLANK
-    } LAYER_TYPE;
+typedef enum
+{
+    CONVOLUTIONAL,
+    DECONVOLUTIONAL,
+    CONNECTED,
+    MAXPOOL,
+    SOFTMAX,
+    DETECTION,
+    DROPOUT,
+    CROP,
+    ROUTE,
+    COST,
+    NORMALIZATION,
+    AVGPOOL,
+    LOCAL,
+    SHORTCUT,
+    ACTIVE,
+    RNN,
+    GRU,
+    CRNN,
+    BATCHNORM,
+    NETWORK,
+    XNOR,
+    REGION,
+    YOLO,
+    UPSAMPLE,
+    REORG,
+    BLANK
+} LAYER_TYPE;
 
-    typedef enum {
-        SSE, MASKED, SMOOTH
-    } COST_TYPE;
+typedef enum
+{
+    SSE, MASKED, SMOOTH
+} COST_TYPE;
 
-    struct layer {
-        LAYER_TYPE type;
-        ACTIVATION activation;
-        COST_TYPE cost_type;
-        void(*forward)   (struct layer, struct network_state);
-        void(*backward)  (struct layer, struct network_state);
-        void(*update)    (struct layer, int, float, float, float);
-        void(*forward_gpu)   (struct layer, struct network_state);
-        void(*backward_gpu)  (struct layer, struct network_state);
-        void(*update_gpu)    (struct layer, int, float, float, float);
-        int batch_normalize;
-        int shortcut;
-        int batch;
-        int forced;
-        int flipped;
-        int inputs;
-        int outputs;
-        int truths;
-        int h, w, c;
-        int out_h, out_w, out_c;
-        int n;
-        int max_boxes;
-        int groups;
-        int size;
-        int side;
-        int stride;
-        int reverse;
-        int pad;
-        int sqrt;
-        int flip;
-        int index;
-        int binary;
-        int xnor;
-        int use_bin_output;
-        int steps;
-        int hidden;
-        float dot;
-        float angle;
-        float jitter;
-        float saturation;
-        float exposure;
-        float shift;
-        float ratio;
-        int focal_loss;
-        int softmax;
-        int classes;
-        int coords;
-        int background;
-        int rescore;
-        int objectness;
-        int does_cost;
-        int joint;
-        int noadjust;
-        int reorg;
-        int log;
+struct layer
+{
+    LAYER_TYPE type;
+    ACTIVATION activation;
+    COST_TYPE cost_type;
 
-        int *mask;
-        int total;
-        float bflops;
+    void (*forward)(struct layer, struct network_state);
 
-        int adam;
-        float B1;
-        float B2;
-        float eps;
-        float *m_gpu;
-        float *v_gpu;
-        int t;
-        float *m;
-        float *v;
+    void (*backward)(struct layer, struct network_state);
 
-        tree *softmax_tree;
-        int  *map;
+    void (*update)(struct layer, int, float, float, float);
 
-        float alpha;
-        float beta;
-        float kappa;
+    void (*forward_gpu)(struct layer, struct network_state);
 
-        float coord_scale;
-        float object_scale;
-        float noobject_scale;
-        float class_scale;
-        int bias_match;
-        int random;
-        float ignore_thresh;
-        float truth_thresh;
-        float thresh;
-        int classfix;
-        int absolute;
+    void (*backward_gpu)(struct layer, struct network_state);
 
-        int dontload;
-        int dontloadscales;
+    void (*update_gpu)(struct layer, int, float, float, float);
 
-        float temperature;
-        float probability;
-        float scale;
+    int batch_normalize;
+    int shortcut;
+    int batch;
+    int forced;
+    int flipped;
+    int inputs;
+    int outputs;
+    int truths;
+    int h, w, c;
+    int out_h, out_w, out_c;
+    int n;
+    int max_boxes;
+    int groups;
+    int size;
+    int side;
+    int stride;
+    int reverse;
+    int pad;
+    int sqrt;
+    int flip;
+    int index;
+    int binary;
+    int xnor;
+    int use_bin_output;
+    int steps;
+    int hidden;
+    float dot;
+    float angle;
+    float jitter;
+    float saturation;
+    float exposure;
+    float shift;
+    float ratio;
+    int focal_loss;
+    int softmax;
+    int classes;
+    int coords;
+    int background;
+    int rescore;
+    int objectness;
+    int does_cost;
+    int joint;
+    int noadjust;
+    int reorg;
+    int log;
 
-        int *indexes;
-        float *rand;
-        float *cost;
-        char  *cweights;
-        float *state;
-        float *prev_state;
-        float *forgot_state;
-        float *forgot_delta;
-        float *state_delta;
+    int *mask;
+    int total;
+    float bflops;
 
-        float *concat;
-        float *concat_delta;
+    int adam;
+    float B1;
+    float B2;
+    float eps;
+    float *m_gpu;
+    float *v_gpu;
+    int t;
+    float *m;
+    float *v;
 
-        float *binary_weights;
+    tree *softmax_tree;
+    int *map;
 
-        char *align_bit_weights_gpu;
-        float *mean_arr_gpu;
-        float *align_workspace_gpu;
-        float *transposed_align_workspace_gpu;
-        int align_workspace_size;
+    float alpha;
+    float beta;
+    float kappa;
 
-        char *align_bit_weights;
-        float *mean_arr;
-        int align_bit_weights_size;
-        int lda_align;
-        int new_lda;
-        int bit_align;
+    float coord_scale;
+    float object_scale;
+    float noobject_scale;
+    float class_scale;
+    int bias_match;
+    int random;
+    float ignore_thresh;
+    float truth_thresh;
+    float thresh;
+    int classfix;
+    int absolute;
 
-        float *biases;
-        float *biases_quant;
-        //float *bias_updates;
+    int dontload;
+    int dontloadscales;
 
-        int quantized;
+    float temperature;
+    float probability;
+    float scale;
 
-        float *scales;
-        //float *scale_updates;
+    int *indexes;
+    float *rand;
+    float *cost;
+    char *cweights;
+    float *state;
+    float *prev_state;
+    float *forgot_state;
+    float *forgot_delta;
+    float *state_delta;
 
-        float *weights;
-        int8_t * weights_int8;
-        //float *weight_updates;
-        //float *weights_quant_multipler;
-        float weights_quant_multipler;
-        float input_quant_multipler;
+    float *concat;
+    float *concat_delta;
 
-        float *col_image;
-        int   * input_layers;
-        int   * input_sizes;
-        //float * delta;
-        float * output;
-        int output_pinned;
-        //float *output_multipler;
-        float output_multipler;
-        int8_t * output_int8;
-        float * squared;
-        float * norms;
+    float *binary_weights;
 
-        float * spatial_mean;
-        float * mean;
-        float * variance;
+    char *align_bit_weights_gpu;
+    float *mean_arr_gpu;
+    float *align_workspace_gpu;
+    float *transposed_align_workspace_gpu;
+    int align_workspace_size;
 
-        //float * mean_delta;
-        //float * variance_delta;
+    char *align_bit_weights;
+    float *mean_arr;
+    int align_bit_weights_size;
+    int lda_align;
+    int new_lda;
+    int bit_align;
 
-        float * rolling_mean;
-        float * rolling_variance;
+    float *biases;
+    float *biases_quant;
+    //float *bias_updates;
 
-        float * x;
-        float * x_norm;
+    int quantized;
 
-        struct layer *input_layer;
-        struct layer *self_layer;
-        struct layer *output_layer;
+    float *scales;
+    //float *scale_updates;
 
-        struct layer *input_gate_layer;
-        struct layer *state_gate_layer;
-        struct layer *input_save_layer;
-        struct layer *state_save_layer;
-        struct layer *input_state_layer;
-        struct layer *state_state_layer;
+    float *weights;
+    int8_t *weights_int8;
+    //float *weight_updates;
+    //float *weights_quant_multipler;
+    float weights_quant_multipler;
+    float input_quant_multipler;
 
-        struct layer *input_z_layer;
-        struct layer *state_z_layer;
+    float *col_image;
+    int *input_layers;
+    int *input_sizes;
+    //float * delta;
+    float *output;
+    int output_pinned;
+    //float *output_multipler;
+    float output_multipler;
+    int8_t *output_int8;
+    float *squared;
+    float *norms;
 
-        struct layer *input_r_layer;
-        struct layer *state_r_layer;
+    float *spatial_mean;
+    float *mean;
+    float *variance;
 
-        struct layer *input_h_layer;
-        struct layer *state_h_layer;
+    //float * mean_delta;
+    //float * variance_delta;
 
-        float *z_cpu;
-        float *r_cpu;
-        float *h_cpu;
+    float *rolling_mean;
+    float *rolling_variance;
 
-        float *binary_input;
-        uint32_t *bin_re_packed_input;
-        char *t_bit_input;
+    float *x;
+    float *x_norm;
 
-        size_t workspace_size;
+    struct layer *input_layer;
+    struct layer *self_layer;
+    struct layer *output_layer;
+
+    struct layer *input_gate_layer;
+    struct layer *state_gate_layer;
+    struct layer *input_save_layer;
+    struct layer *state_save_layer;
+    struct layer *input_state_layer;
+    struct layer *state_state_layer;
+
+    struct layer *input_z_layer;
+    struct layer *state_z_layer;
+
+    struct layer *input_r_layer;
+    struct layer *state_r_layer;
+
+    struct layer *input_h_layer;
+    struct layer *state_h_layer;
+
+    float *z_cpu;
+    float *r_cpu;
+    float *h_cpu;
+
+    float *binary_input;
+    uint32_t *bin_re_packed_input;
+    char *t_bit_input;
+
+    size_t workspace_size;
 
 #ifdef GPU
-        float *z_gpu;
-        float *r_gpu;
-        float *h_gpu;
+    float *z_gpu;
+    float *r_gpu;
+    float *h_gpu;
 
-        int *indexes_gpu;
-        float * prev_state_gpu;
-        float * forgot_state_gpu;
-        float * forgot_delta_gpu;
-        float * state_gpu;
-        float * state_delta_gpu;
-        float * gate_gpu;
-        float * gate_delta_gpu;
-        float * save_gpu;
-        float * save_delta_gpu;
-        float * concat_gpu;
-        float * concat_delta_gpu;
+    int *indexes_gpu;
+    float * prev_state_gpu;
+    float * forgot_state_gpu;
+    float * forgot_delta_gpu;
+    float * state_gpu;
+    float * state_delta_gpu;
+    float * gate_gpu;
+    float * gate_delta_gpu;
+    float * save_gpu;
+    float * save_delta_gpu;
+    float * concat_gpu;
+    float * concat_delta_gpu;
 
-        float *binary_input_gpu;
-        float *binary_weights_gpu;
-        float *bin_conv_shortcut_in_gpu;
-        float *bin_conv_shortcut_out_gpu;
+    float *binary_input_gpu;
+    float *binary_weights_gpu;
+    float *bin_conv_shortcut_in_gpu;
+    float *bin_conv_shortcut_out_gpu;
 
-        float * mean_gpu;
-        float * variance_gpu;
+    float * mean_gpu;
+    float * variance_gpu;
 
-        float * rolling_mean_gpu;
-        float * rolling_variance_gpu;
+    float * rolling_mean_gpu;
+    float * rolling_variance_gpu;
 
-        float * variance_delta_gpu;
-        float * mean_delta_gpu;
+    float * variance_delta_gpu;
+    float * mean_delta_gpu;
 
-        float * col_image_gpu;
+    float * col_image_gpu;
 
-        float * x_gpu;
-        float * x_norm_gpu;
-        float * weights_gpu;
-        //float * weight_updates_gpu;
-        int8_t * weights_int8_gpu;
-        int8_t * weights_int8_int8x4_gpu;
+    float * x_gpu;
+    float * x_norm_gpu;
+    float * weights_gpu;
+    //float * weight_updates_gpu;
+    int8_t * weights_int8_gpu;
+    int8_t * weights_int8_int8x4_gpu;
 
-        float * biases_gpu;
-        //float * bias_updates_gpu;
-        float * biases_quant_gpu;
+    float * biases_gpu;
+    //float * bias_updates_gpu;
+    float * biases_quant_gpu;
 
-        float * scales_gpu;
-        //float * scale_updates_gpu;
+    float * scales_gpu;
+    //float * scale_updates_gpu;
 
-        float * output_gpu;
-        int8_t *output_gpu_int8;
-        float * delta_gpu;
-        float * rand_gpu;
-        float * squared_gpu;
-        float * norms_gpu;
+    float * output_gpu;
+    int8_t *output_gpu_int8;
+    float * delta_gpu;
+    float * rand_gpu;
+    float * squared_gpu;
+    float * norms_gpu;
 #ifdef CUDNN
-        cudnnTensorDescriptor_t biasTensorDesc;
-        cudnnActivationDescriptor_t activationDesc;
-        cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
-        //cudnnTensorDescriptor_t dsrcTensorDesc, ddstTensorDesc;
-        cudnnFilterDescriptor_t weightDesc;
-        //cudnnFilterDescriptor_t dweightDesc;
-        cudnnConvolutionDescriptor_t convDesc;
-        cudnnConvolutionFwdAlgo_t fw_algo;
-        //cudnnConvolutionBwdDataAlgo_t bd_algo;
-        //cudnnConvolutionBwdFilterAlgo_t bf_algo;
-        cudnnPoolingDescriptor_t poolingDesc;
+    cudnnTensorDescriptor_t biasTensorDesc;
+    cudnnActivationDescriptor_t activationDesc;
+    cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
+    //cudnnTensorDescriptor_t dsrcTensorDesc, ddstTensorDesc;
+    cudnnFilterDescriptor_t weightDesc;
+    //cudnnFilterDescriptor_t dweightDesc;
+    cudnnConvolutionDescriptor_t convDesc;
+    cudnnConvolutionFwdAlgo_t fw_algo;
+    //cudnnConvolutionBwdDataAlgo_t bd_algo;
+    //cudnnConvolutionBwdFilterAlgo_t bf_algo;
+    cudnnPoolingDescriptor_t poolingDesc;
 #endif
 #endif
 
 #ifdef OPENCL
-        cl_mem weights_ocl;
-        cl_mem biases_ocl;
-        cl_mem scales_ocl;
-        cl_mem rolling_mean_ocl;
-        cl_mem rolling_variance_ocl;
+    cl_mem weights_ocl;
+    cl_mem biases_ocl;
+    cl_mem scales_ocl;
+    cl_mem rolling_mean_ocl;
+    cl_mem rolling_variance_ocl;
 
-        cl_mem output_ocl;
-        cl_mem indexes_ocl;
-        cl_mem x_ocl;
+    cl_mem output_ocl;
+    cl_mem indexes_ocl;
+    cl_mem x_ocl;
 #endif
-    };
+};
 
-    typedef layer local_layer;
-    typedef layer convolutional_layer;
-    typedef layer softmax_layer;
-    typedef layer region_layer;
-    typedef layer reorg_layer;
-    typedef layer maxpool_layer;
-    typedef layer route_layer;
+typedef layer local_layer;
+typedef layer convolutional_layer;
+typedef layer softmax_layer;
+typedef layer region_layer;
+typedef layer reorg_layer;
+typedef layer maxpool_layer;
+typedef layer route_layer;
 
-    void free_layer(layer);
+void free_layer(layer);
 
 
-    // -------------- network.h --------------
+// -------------- network.h --------------
 
-    typedef enum {
-        CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
-    } learning_rate_policy;
+typedef enum
+{
+    CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
+} learning_rate_policy;
 
-    typedef struct network {
-        int quantized;
-        float *workspace;
-        int n;
-        int batch;
-        float *input_calibration;
-        int input_calibration_size;
-        uint64_t *seen;
-        float epoch;
-        int subdivisions;
-        float momentum;
-        float decay;
-        layer *layers;
-        int outputs;
-        float *output;
-        learning_rate_policy policy;
+typedef struct network
+{
+    int quantized;
+    float *workspace;
+    int n;
+    int batch;
+    float *input_calibration;
+    int input_calibration_size;
+    uint64_t *seen;
+    float epoch;
+    int subdivisions;
+    float momentum;
+    float decay;
+    layer *layers;
+    int outputs;
+    float *output;
+    learning_rate_policy policy;
 
-        float learning_rate;
-        float gamma;
-        float scale;
-        float power;
-        int time_steps;
-        int step;
-        int max_batches;
-        float *scales;
-        int   *steps;
-        int num_steps;
-        int burn_in;
+    float learning_rate;
+    float gamma;
+    float scale;
+    float power;
+    int time_steps;
+    int step;
+    int max_batches;
+    float *scales;
+    int *steps;
+    int num_steps;
+    int burn_in;
 
-        int adam;
-        float B1;
-        float B2;
-        float eps;
+    int adam;
+    float B1;
+    float B2;
+    float eps;
 
-        int inputs;
-        int h, w, c;
-        int max_crop;
-        int min_crop;
-        float angle;
-        float aspect;
-        float exposure;
-        float saturation;
-        float hue;
+    int inputs;
+    int h, w, c;
+    int max_crop;
+    int min_crop;
+    float angle;
+    float aspect;
+    float exposure;
+    float saturation;
+    float hue;
 
-        int gpu_index;
-        tree *hierarchy;
-        int do_input_calibration;
+    int gpu_index;
+    tree *hierarchy;
+    int do_input_calibration;
 
 #ifdef GPU
-        float *input_state_gpu;
-        float *input_pinned_cpu;
-        int input_pinned_cpu_flag;
+    float *input_state_gpu;
+    float *input_pinned_cpu;
+    int input_pinned_cpu_flag;
 
-        float **input_gpu;
-        float **truth_gpu;
+    float **input_gpu;
+    float **truth_gpu;
 #endif
 
 #ifdef OPENCL
-        cl_mem workspace_ocl;
+    cl_mem workspace_ocl;
 #endif
-    } network;
+} network;
 
-    typedef struct network_state {
-        float *truth;
-        float *input;
-        int8_t *input_int8;
-        float *delta;
-        float *workspace;
-        int train;
-        int index;
-        network net;
+typedef struct network_state
+{
+    float *truth;
+    float *input;
+    int8_t *input_int8;
+    float *delta;
+    float *workspace;
+    int train;
+    int index;
+    network net;
 #ifdef OPENCL
-        cl_mem input_ocl;
-        cl_mem workspace_ocl;
+    cl_mem input_ocl;
+    cl_mem workspace_ocl;
 #endif
-    } network_state;
+} network_state;
 
 
-    // network.c
-    network make_network(int n);
+// network.c
+network make_network(int n);
 
 
-    // network.c
+// network.c
 #ifdef GPU
 #ifdef CUDNN
-    void cudnn_convolutional_setup(layer *l);
-    void cuda_set_device(int n);
+void cudnn_convolutional_setup(layer *l);
+void cuda_set_device(int n);
 #endif
 #endif
 
 #ifdef OPENCL
-    bool ocl_initialize();
+bool ocl_initialize();
 #endif
 
-    // network.c
-    void set_batch_network(network *net, int b);
+// network.c
+void set_batch_network(network *net, int b);
 
 
-    // -------------- softmax_layer.h --------------
+// -------------- softmax_layer.h --------------
 
-    // softmax_layer.c
-    softmax_layer make_softmax_layer(int batch, int inputs, int groups);
+// softmax_layer.c
+softmax_layer make_softmax_layer(int batch, int inputs, int groups);
 
-    // -------------- reorg_layer.h --------------
+// -------------- reorg_layer.h --------------
 
-    // reorg_layer.c
-    layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse);
+// reorg_layer.c
+layer make_reorg_layer(int batch, int w, int h, int c, int stride, int reverse);
 
-    // -------------- route_layer.h --------------
+// -------------- route_layer.h --------------
 
-    // route_layer.c
-    route_layer make_route_layer(int batch, int n, int *input_layers, int *input_sizes);
+// route_layer.c
+route_layer make_route_layer(int batch, int n, int *input_layers, int *input_sizes);
 
-    // -------------- region_layer.h --------------
+// -------------- region_layer.h --------------
 
-    //  region_layer.c
-    region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords);
-
-
-    // -------------- maxpool_layer.h --------------
-
-    // maxpool_layer.c
-    maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride, int padding);
-
-    // -------------- convolutional_layer.h --------------
-
-    // convolutional_layer.c
-    convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int quantized, int use_bin_output);
+//  region_layer.c
+region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords);
 
 
+// -------------- maxpool_layer.h --------------
 
-    // -------------- image.c --------------
+// maxpool_layer.c
+maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int stride, int padding);
 
-    // image.c
-    typedef struct {
-        int h;
-        int w;
-        int c;
-        float *data;
-    } image;
+// -------------- convolutional_layer.h --------------
 
-    // image.c
-    void rgbgr_image(image im);
+// convolutional_layer.c
+convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding,
+                                             ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam,
+                                             int quantized, int use_bin_output);
 
-    // image.c
-    image make_empty_image(int w, int h, int c);
 
-    // image.c
-    void free_image(image m);
 
-    // image.c
-    void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b);
+// -------------- image.c --------------
 
-    // image.c
-    void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b);
+// image.c
+typedef struct
+{
+    int h;
+    int w;
+    int c;
+    float *data;
+} image;
 
-    // image.c
-    image make_image(int w, int h, int c);
+// image.c
+void rgbgr_image(image im);
 
-    // image.c
-    float get_pixel(image m, int x, int y, int c);
+// image.c
+image make_empty_image(int w, int h, int c);
 
-    // image.c
-    void set_pixel(image m, int x, int y, int c, float val);
+// image.c
+void free_image(image m);
 
-    // image.c
-    image resize_image(image im, int w, int h);
+// image.c
+void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b);
 
-    // image.c
-    image load_image(char *filename, int w, int h, int c);
+// image.c
+void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b);
 
-    // image.c
-    image load_image_stb(char *filename, int channels);
+// image.c
+image make_image(int w, int h, int c);
+
+// image.c
+float get_pixel(image m, int x, int y, int c);
+
+// image.c
+void set_pixel(image m, int x, int y, int c, float val);
+
+// image.c
+image resize_image(image im, int w, int h);
+
+// image.c
+image load_image(char *filename, int w, int h, int c);
+
+// image.c
+image load_image_stb(char *filename, int channels);
 
 #ifdef OPENCV
-    // image.c
-    image ipl_to_image(IplImage* src);
+// image.c
+image ipl_to_image(IplImage* src);
 
-    // image.c
-    void show_image_cv_ipl(IplImage *disp, const char *name);
+// image.c
+void show_image_cv_ipl(IplImage *disp, const char *name);
 #endif
 
-    // image.c
-    image load_image_cv(char *filename, int channels);
+// image.c
+image load_image_cv(char *filename, int channels);
 
-    // image.c
-    float get_color(int c, int x, int max);
+// image.c
+float get_color(int c, int x, int max);
 
-    // image.c
-    void save_image_png(image im, const char *name);
+// image.c
+void save_image_png(image im, const char *name);
 
-    // image.c
-    void show_image(image p, const char *name);
-
-
-    // -------------- parser.c --------------------
-
-    // parser.c
-    network parse_network_cfg(char *filename, int batch, int quantized);
-
-    // parser.c
-    void load_weights_upto_cpu(network *net, char *filename, int cutoff);
+// image.c
+void show_image(image p, const char *name);
 
 
-    // -------------- yolov2_forward_network.c --------------------
+// -------------- parser.c --------------------
+
+// parser.c
+network parse_network_cfg(char *filename, int batch, int quantized);
+
+// parser.c
+void load_weights_upto_cpu(network *net, char *filename, int cutoff);
 
 
-    // detect on CPU: yolov2_forward_network.c
-    float *network_predict_cpu(network net, float *input);
+// -------------- yolov2_forward_network.c --------------------
 
-    // calculate mAP
-    void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, int quantized, const float iou_thresh);
 
-    // fuse convolutional and batch_norm weights into one convolutional-layer
-    void yolov2_fuse_conv_batchnorm(network net);
+// detect on CPU: yolov2_forward_network.c
+float *network_predict_cpu(network net, float *input);
 
-    // calibration input for int8 quantinization
-    float *network_calibrate_cpu(network net, float *input);
+// calculate mAP
+void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, int quantized,
+                           const float iou_thresh);
 
-    // -------------- yolov2_forward_network_quantized.c --------------------
+// fuse convolutional and batch_norm weights into one convolutional-layer
+void yolov2_fuse_conv_batchnorm(network net);
 
-    // yolov2_forward_network.c - fp32 is used for 1st and last layers during INT8-quantized inference
-    void forward_convolutional_layer_cpu(layer l, network_state state);
+// calibration input for int8 quantinization
+float *network_calibrate_cpu(network net, float *input);
 
-    // quantizized
-    float *network_predict_quantized(network net, float *input);
+// -------------- yolov2_forward_network_quantized.c --------------------
 
-    // Quantinization and get multiplers for convolutional weights for quantinization
-    void quantinization_and_get_multipliers(network net);
+// yolov2_forward_network.c - fp32 is used for 1st and last layers during INT8-quantized inference
+void forward_convolutional_layer_cpu(layer l, network_state state);
 
-    // draw distribution of float values
-    void draw_distribution(float *arr_ptr, int arr_size, char *name);
+// quantizized
+float *network_predict_quantized(network net, float *input);
 
-    // 8-bit Inference with TensorRT: http://on-demand.gputechconf.com/gtc/2017/presentation/s7310-8-bit-inference-with-tensorrt.pdf
-    float entropy_calibration(float *src_arr, const size_t size, const float bin_width, const int max_bin);
+// Quantinization and get multiplers for convolutional weights for quantinization
+void quantinization_and_get_multipliers(network net);
 
-    // additionally.c
-    void validate_calibrate_valid(char *datacfg, char *cfgfile, char *weightfile, int input_calibration);
+// draw distribution of float values
+void draw_distribution(float *arr_ptr, int arr_size, char *name);
 
-    // additionally.c
-    detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num, int letter);
+// 8-bit Inference with TensorRT: http://on-demand.gputechconf.com/gtc/2017/presentation/s7310-8-bit-inference-with-tensorrt.pdf
+float entropy_calibration(float *src_arr, const size_t size, const float bin_width, const int max_bin);
 
-    // additionally.c
-    int entry_index(layer l, int batch, int location, int entry);
+// additionally.c
+void validate_calibrate_valid(char *datacfg, char *cfgfile, char *weightfile, int input_calibration);
 
-    // additionally.c
-    void free_detections(detection *dets, int n);
+// additionally.c
+detection *
+get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num, int letter);
 
-    // -------------- yolov2_forward_network_gpu.c --------------------
+// additionally.c
+int entry_index(layer l, int batch, int location, int entry);
+
+// additionally.c
+void free_detections(detection *dets, int n);
+
+// -------------- yolov2_forward_network_gpu.c --------------------
 
 #ifdef GPU
-    // detect on GPU: yolov2_forward_network_gpu.cu
-    float *network_predict_gpu_cudnn(network net, float *input);
+// detect on GPU: yolov2_forward_network_gpu.cu
+float *network_predict_gpu_cudnn(network net, float *input);
 
-    // detect on GPU: yolov2_forward_network_gpu.cu - quantized INT8x4
-    float *network_predict_gpu_cudnn_quantized(network net, float *input);
+// detect on GPU: yolov2_forward_network_gpu.cu - quantized INT8x4
+float *network_predict_gpu_cudnn_quantized(network net, float *input);
 
-    // // init weights and cuDNN for quantized IINT8x4
-    void init_gpu_int8x4(network net);
+// // init weights and cuDNN for quantized IINT8x4
+void init_gpu_int8x4(network net);
 #endif
 
-    // -------------- yolov2_forward_network_ocl.c --------------------
+// -------------- yolov2_forward_network_ocl.c --------------------
 
 #ifdef OPENCL
-    // detect using OpenCL: yolov2_forward_network_gpu.cpp
-    float *network_predict_opencl(network net, float *input);
+// detect using OpenCL: yolov2_forward_network_gpu.cpp
+float *network_predict_opencl(network net, float *input);
 #endif
 
 
-    // -------------- gettimeofday for Windows--------------------
+// -------------- gettimeofday for Windows--------------------
 
 #if defined(_MSC_VER)
 #include <time.h>
@@ -981,13 +1026,13 @@ extern "C" {
 #include <sys/time.h>
 #endif
 
-    struct timezone
-    {
-        int  tz_minuteswest; /* minutes W of Greenwich */
-        int  tz_dsttime;     /* type of dst correction */
-    };
+struct timezone
+{
+    int  tz_minuteswest; /* minutes W of Greenwich */
+    int  tz_dsttime;     /* type of dst correction */
+};
 
-    int gettimeofday(struct timeval *tv, struct timezone *tz);
+int gettimeofday(struct timeval *tv, struct timezone *tz);
 #endif
 
 #ifdef __cplusplus

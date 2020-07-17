@@ -25,9 +25,11 @@
 #endif
 
 // get prediction boxes: yolov2_forward_network.c
-void get_region_boxes_cpu(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness, int *map);
+void
+get_region_boxes_cpu(layer l, int w, int h, float thresh, float **probs, box *boxes, int only_objectness, int *map);
 
-typedef struct detection_with_class {
+typedef struct detection_with_class
+{
     detection det;
     // The most probable class id: the best class index in this->prob.
     // Is filled temporary when processing results, otherwise not initialized
@@ -35,22 +37,26 @@ typedef struct detection_with_class {
 } detection_with_class;
 
 // Creates array of detections with prob > thresh and fills best_class for them
-detection_with_class* get_actual_detections(detection *dets, int dets_num, float thresh, int* selected_detections_num)
+detection_with_class *get_actual_detections(detection *dets, int dets_num, float thresh, int *selected_detections_num)
 {
     int selected_num = 0;
-    detection_with_class* result_arr = calloc(dets_num, sizeof(detection_with_class));
+    detection_with_class *result_arr = calloc(dets_num, sizeof(detection_with_class));
     int i;
-    for (i = 0; i < dets_num; ++i) {
+    for (i = 0; i < dets_num; ++i)
+    {
         int best_class = -1;
         float best_class_prob = thresh;
         int j;
-        for (j = 0; j < dets[i].classes; ++j) {
-            if (dets[i].prob[j] > best_class_prob) {
+        for (j = 0; j < dets[i].classes; ++j)
+        {
+            if (dets[i].prob[j] > best_class_prob)
+            {
                 best_class = j;
                 best_class_prob = dets[i].prob[j];
             }
         }
-        if (best_class >= 0) {
+        if (best_class >= 0)
+        {
             result_arr[selected_num].det = dets[i];
             result_arr[selected_num].best_class = best_class;
             ++selected_num;
@@ -62,42 +68,48 @@ detection_with_class* get_actual_detections(detection *dets, int dets_num, float
 }
 
 // compare to sort detection** by bbox.x
-int compare_by_lefts(const void *a_ptr, const void *b_ptr) {
-    const detection_with_class* a = (detection_with_class*)a_ptr;
-    const detection_with_class* b = (detection_with_class*)b_ptr;
+int compare_by_lefts(const void *a_ptr, const void *b_ptr)
+{
+    const detection_with_class *a = (detection_with_class *) a_ptr;
+    const detection_with_class *b = (detection_with_class *) b_ptr;
     const float delta = (a->det.bbox.x - a->det.bbox.w / 2) - (b->det.bbox.x - b->det.bbox.w / 2);
     return delta < 0 ? -1 : delta > 0 ? 1 : 0;
 }
 
 // compare to sort detection** by best_class probability
-int compare_by_probs(const void *a_ptr, const void *b_ptr) {
-    const detection_with_class* a = (detection_with_class*)a_ptr;
-    const detection_with_class* b = (detection_with_class*)b_ptr;
+int compare_by_probs(const void *a_ptr, const void *b_ptr)
+{
+    const detection_with_class *a = (detection_with_class *) a_ptr;
+    const detection_with_class *b = (detection_with_class *) b_ptr;
     float delta = a->det.prob[a->best_class] - b->det.prob[b->best_class];
     return delta < 0 ? -1 : delta > 0 ? 1 : 0;
 }
 
-void draw_detections_v3(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
+void draw_detections_v3(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes,
+                        int ext_output)
 {
     int selected_detections_num;
-    detection_with_class* selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num);
+    detection_with_class *selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num);
 
     // text output
     qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_lefts);
     int i;
-    for (i = 0; i < selected_detections_num; ++i) {
+    for (i = 0; i < selected_detections_num; ++i)
+    {
         const int best_class = selected_detections[i].best_class;
         printf("%s: %.0f%%", names[best_class], selected_detections[i].det.prob[best_class] * 100);
         if (ext_output)
             printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
-                round((selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w),
-                round((selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h),
-                round(selected_detections[i].det.bbox.w*im.w), round(selected_detections[i].det.bbox.h*im.h));
+                   round((selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2) * im.w),
+                   round((selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2) * im.h),
+                   round(selected_detections[i].det.bbox.w * im.w), round(selected_detections[i].det.bbox.h * im.h));
         else
             printf("\n");
         int j;
-        for (j = 0; j < classes; ++j) {
-            if (selected_detections[i].det.prob[j] > thresh && j != best_class) {
+        for (j = 0; j < classes; ++j)
+        {
+            if (selected_detections[i].det.prob[j] > thresh && j != best_class)
+            {
                 printf("%s: %.0f%%\n", names[j], selected_detections[i].det.prob[j] * 100);
             }
         }
@@ -105,7 +117,8 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 
     // image output
     qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_probs);
-    for (i = 0; i < selected_detections_num; ++i) {
+    for (i = 0; i < selected_detections_num; ++i)
+    {
         int width = im.h * .006;
         if (width < 1)
             width = 1;
@@ -132,10 +145,10 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
         box b = selected_detections[i].det.bbox;
         //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
-        int left = (b.x - b.w / 2.)*im.w;
-        int right = (b.x + b.w / 2.)*im.w;
-        int top = (b.y - b.h / 2.)*im.h;
-        int bot = (b.y + b.h / 2.)*im.h;
+        int left = (b.x - b.w / 2.) * im.w;
+        int right = (b.x + b.w / 2.) * im.w;
+        int top = (b.y - b.h / 2.) * im.h;
+        int bot = (b.y + b.h / 2.) * im.h;
 
         if (left < 0) left = 0;
         if (right > im.w - 1) right = im.w - 1;
@@ -153,32 +166,41 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 
 
 // Detect on Image: this function uses other functions not from this file
-void test_detector_cpu(char **names, char *cfgfile, char *weightfile, char *filename, float thresh, int quantized, int dont_show)
+void test_detector_cpu(char **names, char *cfgfile, char *weightfile, char *filename, float thresh, int quantized,
+                       int dont_show)
 {
     //image **alphabet = load_alphabet();            // image.c
     image **alphabet = NULL;
+
+    // todo: modify to save weights
     network net = parse_network_cfg(cfgfile, 1, quantized);    // parser.c
-    if (weightfile) {
+    if (weightfile)
+    {
         load_weights_upto_cpu(&net, weightfile, net.n);    // parser.c
     }
     //set_batch_network(&net, 1);                    // network.c
     srand(2222222);
     yolov2_fuse_conv_batchnorm(net);
     calculate_binary_weights(net);
-    if (quantized) {
+    if (quantized)
+    {
         printf("\n\n Quantinization! \n\n");
         quantinization_and_get_multipliers(net);
     }
+    // todo: modify to save weights done
+
     clock_t time;
     char buff[256];
     char *input = buff;
     int j;
     float nms = .4;
-    while (1) {
-        if (filename) {
+    while (1)
+    {
+        if (filename)
+        {
             strncpy(input, filename, 256);
-        }
-        else {
+        } else
+        {
             printf("Enter Image Path: ");
             fflush(stdout);
             input = fgets(input, 256, stdin);
@@ -189,9 +211,9 @@ void test_detector_cpu(char **names, char *cfgfile, char *weightfile, char *file
         image sized = resize_image(im, net.w, net.h);    // image.c
         layer l = net.layers[net.n - 1];
 
-        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
-        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
-        for (j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+        box *boxes = calloc(l.w * l.h * l.n, sizeof(box));
+        float **probs = calloc(l.w * l.h * l.n, sizeof(float *));
+        for (j = 0; j < l.w * l.h * l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
 
         float *X = sized.data;
         time = clock();
@@ -208,16 +230,18 @@ void test_detector_cpu(char **names, char *cfgfile, char *weightfile, char *file
 #ifdef OPENCL
         network_predict_opencl(net, X);
 #else
-        if (quantized) {
+        if (quantized)
+        {
             network_predict_quantized(net, X);    // quantized
             nms = 0.2;
-        }
-        else {
+        } else
+        {
             network_predict_cpu(net, X);
         }
 #endif
 #endif
-        printf("%s: Predicted in %f seconds.\n", input, (float)(clock() - time) / CLOCKS_PER_SEC); //sec(clock() - time));
+        printf("%s: Predicted in %f seconds.\n", input,
+               (float) (clock() - time) / CLOCKS_PER_SEC); //sec(clock() - time));
         //get_region_boxes_cpu(l, 1, 1, thresh, probs, boxes, 0, 0);            // get_region_boxes(): region_layer.c
 
         //  nms (non maximum suppression) - if (IoU(box[i], box[j]) > nms) then remove one of two boxes with lower probability
@@ -230,14 +254,15 @@ void test_detector_cpu(char **names, char *cfgfile, char *weightfile, char *file
         draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, ext_output);
 
         save_image_png(im, "predictions");    // image.c
-        if (!dont_show) {
+        if (!dont_show)
+        {
             show_image(im, "predictions");    // image.c
         }
 
         free_image(im);                    // image.c
         free_image(sized);                // image.c
         free(boxes);
-        free_ptrs((void **)probs, l.w*l.h*l.n);    // utils.c
+        free_ptrs((void **) probs, l.w * l.h * l.n);    // utils.c
 #ifdef OPENCV
         cvWaitKey(0);
         cvDestroyAllWindows();
@@ -572,11 +597,13 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 }
 #else
+
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, int quantized, char *out_filename, int dont_show)
+          int frame_skip, char *prefix, int quantized, char *out_filename, int dont_show)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }
+
 #endif
 
 
@@ -592,13 +619,13 @@ void run_detector(int argc, char **argv)
     int quantized = find_arg(argc, argv, "-quantized");
     int input_calibration = find_int_arg(argc, argv, "-input_calibration", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
-    if (argc < 4) {
+    if (argc < 4)
+    {
         fprintf(stderr, "usage: %s %s [demo/test/] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
     }
 
     int clear = 0;                // find_arg(argc, argv, "-clear");
-
     char *obj_names = argv[3];    // char *datacfg = argv[3];
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
@@ -607,11 +634,12 @@ void run_detector(int argc, char **argv)
     // load object names
     char **names = calloc(10000, sizeof(char *));
     int obj_count = 0;
-    FILE* fp;
+    FILE *fp;
     char buffer[255];
     fp = fopen(obj_names, "r");
-    while (fgets(buffer, 255, (FILE*)fp)) {
-        names[obj_count] = calloc(strlen(buffer)+1, sizeof(char));
+    while (fgets(buffer, 255, (FILE *) fp))
+    {
+        names[obj_count] = calloc(strlen(buffer) + 1, sizeof(char));
         strcpy(names[obj_count], buffer);
         names[obj_count][strlen(buffer) - 1] = '\0'; //remove newline
         ++obj_count;
@@ -619,15 +647,15 @@ void run_detector(int argc, char **argv)
     fclose(fp);
     int classes = obj_count;
 
-    if (0 == strcmp(argv[2], "test")) test_detector_cpu(names, cfg, weights, filename, thresh, quantized, dont_show);
-    //else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
-    //else if (0 == strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights);
-    //else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
-    else if (0 == strcmp(argv[2], "map")) validate_detector_map(obj_names, cfg, weights, thresh, quantized, iou_thresh);
-    else if (0 == strcmp(argv[2], "calibrate")) validate_calibrate_valid(obj_names, cfg, weights, input_calibration);
-    else if (0 == strcmp(argv[2], "demo")) {
-        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, quantized, out_filename, dont_show);
-    }
+    if (0 == strcmp(argv[2], "test"))
+        test_detector_cpu(names, cfg, weights, filename, thresh, quantized, dont_show);
+    else if (0 == strcmp(argv[2], "map"))
+        validate_detector_map(obj_names, cfg, weights, thresh, quantized, iou_thresh);
+    else if (0 == strcmp(argv[2], "calibrate"))
+        validate_calibrate_valid(obj_names, cfg, weights, input_calibration);
+    else if (0 == strcmp(argv[2], "demo"))
+        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, quantized, out_filename,
+             dont_show);
 
     int i;
     for (i = 0; i < obj_count; ++i) free(names[i]);
@@ -637,16 +665,15 @@ void run_detector(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-#ifdef _DEBUG
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif
     int i;
-    for (i = 0; i < argc; ++i) {
+    for (i = 0; i < argc; ++i)
+    {
         if (!argv[i]) continue;
         strip(argv[i]);
     }
 
-    if (argc < 2) {
+    if (argc < 2)
+    {
         fprintf(stderr, "usage: %s <function>\n", argv[0]);
         return 0;
     }
